@@ -18,22 +18,6 @@ export class Store {
         return this.users.get(name) || null
     }
 
-    getAll(): Array<User> {
-        return Array.from(this.users.values())
-    }
-
-    getWinners(): Array<Winner> {
-        return Array.from(this.users.values()).map(user => new Winner(user))
-    }
-
-    getRoom(id: string): Room | null {
-        return this.rooms.get(id) || null
-    }
-
-    getAvailableRooms(): Array<Room> {
-        return Array.from(this.rooms.values()).filter(room => room.roomUsers.length === 1)
-    }
-
     authenticate(data: ICreds, ws: WebSocket): LoginResult | undefined {
         const user = this.users.get(data.name)
         if (user) {
@@ -43,17 +27,18 @@ export class Store {
             return new LoginResult(user.name, user.index, true, 'invalid password')
         }
         // create new user
-        const newUser = new User(data, ws)
+        const newUser = new User(data, ws, this)
         this.users.set(data.name, newUser)
     }
 
     createRoom(user: User) {
         const newRoom = new Room(user)
         this.rooms.set(newRoom.roomId, newRoom)
+        this.notifyAboutFreeRooms()
     }
 
     addToRoom(roomId: string, user: User): Room {
-        const room = this.getRoom(roomId)
+        const room = this.rooms.get(roomId)
         if (!room) {
             throw new CustomError('error', `room ${roomId} is not found`)
         }
@@ -62,6 +47,36 @@ export class Store {
             throw new CustomError('error', `You are the owner of this room`)
         }
         room.join(user)
-        return room;
+        this.notifyAboutFreeRooms()
+        return room
+    }
+
+    notifyAboutFreeRooms() {
+        const rooms = this.getFreeRooms()
+        this.notifyAll(user => user.updateFreeRooms(rooms))
+    }
+
+    notifyAboutWinners() {
+        const winners = this.getWinners()
+        this.notifyAll(user => user.updateWinners(winners))
+    }
+
+    notifyAll(callback: (user: User) => void) {
+        this.getAll().forEach(callback)
+    }
+
+    private getWinners(): Array<Winner> {
+        return Array.from(this.users.values())
+            .map(user => new Winner(user))
+            .sort((a: Winner, b: Winner) => b.wins - a.wins)
+    }
+
+    private getFreeRooms(): Array<Room> {
+        return Array.from(this.rooms.values())
+            .filter(room => room.roomUsers.length === 1)
+    }
+
+    private getAll(): Array<User> {
+        return Array.from(this.users.values())
     }
 }

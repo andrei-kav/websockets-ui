@@ -1,4 +1,4 @@
-import {ICreds, IShip} from "./models";
+import {IAttack, ICreds, IShip} from "./models";
 
 /**
  * create / login
@@ -10,7 +10,7 @@ export interface RequestLoginCreateUser {
     data: ICreds;
     id: 0
 }
-export const IsLoginCreate = (data: Record<string, any>): data is RequestLoginCreateUser => {
+export const isLoginCreate = (data: Record<string, any>): data is RequestLoginCreateUser => {
     return data?.type === LOGIN
         && data?.id === 0
         && typeof data?.data?.name === 'string'
@@ -29,7 +29,7 @@ export interface RequestCreateRoom {
     data: '';
     id: 0
 }
-export const IsCreateRoom = (data: Record<string, any>): data is RequestCreateRoom => {
+export const isCreateRoom = (data: Record<string, any>): data is RequestCreateRoom => {
     return data?.type === CREATE_ROOM
         && data?.id === 0
         && typeof data?.data === 'string'
@@ -48,7 +48,7 @@ export interface RequestAddYourselfToRoom {
     };
     id: 0
 }
-export const IsAddYourselfToRoom = (data: Record<string, any>): data is RequestAddYourselfToRoom => {
+export const isAddYourselfToRoom = (data: Record<string, any>): data is RequestAddYourselfToRoom => {
     return data?.type === ADD_TO_ROOM
         && data?.id === 0
         && typeof data?.data?.indexRoom === 'string'
@@ -69,11 +69,29 @@ export interface RequestAddShips {
     };
     id: 0
 }
-export const IsAddShips = (data: Record<string, any>): data is RequestAddShips => {
+export const isAddShips = (data: Record<string, any>): data is RequestAddShips => {
     return data?.type === ADD_SHIPS
         && data?.id === 0
-        && typeof data?.data?.gameId === 'string'
         && !!data?.data.gameId.length
         && !!data?.data.ships?.length
+        && !!data?.data.indexPlayer?.length
+}
+
+/**
+ * add ships
+ */
+type Attack = 'attack'
+export const ATTACK: Attack = 'attack'
+export interface RequestAttack {
+    type: Attack;
+    data: IAttack;
+    id: 0
+}
+export const isAttack = (data: Record<string, any>): data is RequestAttack => {
+    return data?.type === ATTACK
+        && data?.id === 0
+        && !!data?.data.gameId?.length
+        && typeof data?.data?.x === 'number'
+        && typeof data?.data?.y === 'number'
         && !!data?.data.indexPlayer?.length
 }

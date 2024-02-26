@@ -2,10 +2,10 @@ import {Store} from "./Store";
 import WebSocket, {RawData} from "ws";
 import {
     ADD_SHIPS,
-    ADD_TO_ROOM,
-    CREATE_ROOM, IsAddShips, IsAddYourselfToRoom,
-    IsCreateRoom,
-    IsLoginCreate,
+    ADD_TO_ROOM, ATTACK,
+    CREATE_ROOM, isAddShips, isAddYourselfToRoom, isAttack,
+    isCreateRoom,
+    isLoginCreate,
     LOGIN
 } from "../models/requests";
 import {CustomError, ICreds} from "../models/models";
@@ -44,23 +44,28 @@ export class Client {
         const type = parsed.type
         switch (type) {
             case LOGIN:
-                if (IsLoginCreate(parsed)) {
+                if (isLoginCreate(parsed)) {
                     this.login(parsed.data)
                     break;
                 }
             case CREATE_ROOM:
-                if (IsCreateRoom(parsed) && this.user) {
+                if (isCreateRoom(parsed) && this.user) {
                     this.createRoom(this.user)
                     break;
                 }
             case ADD_TO_ROOM:
-                if (IsAddYourselfToRoom(parsed) && this.user) {
+                if (isAddYourselfToRoom(parsed) && this.user) {
                     this.addYourselfToRoom(parsed.data.indexRoom, this.user)
                     break;
                 }
             case ADD_SHIPS:
-                if (IsAddShips(parsed) && this.user && this.user.isPreparingToPlay()) {
+                if (isAddShips(parsed) && this.user && this.user.isPreparingToPlay()) {
                     this.user.addShips(parsed.data.ships)
+                    break;
+                }
+            case ATTACK:
+                if (isAttack(parsed) && this.user && this.user.isFighting()) {
+                    this.user.attack(parsed.data)
                     break;
                 }
             default:
@@ -84,33 +89,19 @@ export class Client {
         }
 
         this.user = this.store.getUser(result.name)
-        this.updateWinners()
-        this.updateAvailableRooms()
+        this.store.notifyAboutWinners()
+        this.store.notifyAboutFreeRooms()
     }
 
     private createRoom(user: User) {
         this.store.createRoom(user)
-        // update available rooms info
-        this.updateAvailableRooms()
     }
 
     private addYourselfToRoom(roomId: string, user: User) {
         const room = this.store.addToRoom(roomId, user)
-        // update available rooms info
-        this.updateAvailableRooms()
         if (room) {
             this.createGame(room)
         }
-    }
-
-    private updateAvailableRooms() {
-        const rooms = this.store.getAvailableRooms()
-        this.notifyAll(user => user.updateAvailableRooms(rooms))
-    }
-
-    private updateWinners() {
-        const winners = this.store.getWinners()
-        this.notifyAll(user => user.updateWinners(winners))
     }
 
     private createGame(room: Room) {
@@ -138,7 +129,9 @@ export class Client {
     }
 
     private close() {
-        console.log('client closed')
+        if (this.user) {
+            this.user.logout()
+        }
     }
 
     private parseMessage(message: RawData): Record<string, any> {
@@ -153,13 +146,5 @@ export class Client {
         }
 
         return parsed
-    }
-
-    private notifyUsers(users: Array<User>, callback: (user: User) => void) {
-        users.forEach(callback)
-    }
-
-    private notifyAll(callback: (user: User) => void) {
-        this.notifyUsers(this.store.getAll(), callback)
     }
 }

@@ -12,14 +12,7 @@ export class ResponseObj {
     }
 }
 
-interface ILoginResult {
-    name: string;
-    index: string;
-    error: boolean;
-    errorText: string;
-}
-
-export class LoginResult implements ILoginResult {
+export class LoginResult {
     constructor(
         public name: string,
         public index: string,
