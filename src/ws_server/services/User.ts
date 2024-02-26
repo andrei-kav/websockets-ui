@@ -2,7 +2,7 @@ import WebSocket from "ws";
 import {Game} from "./Game";
 import {generateID} from "../helpers/generateID";
 import {ResponseObj} from "../models/responses";
-import {CustomError, IAttack, ICreds, IShip, ShotHandled, Winner} from "../models/models";
+import {CustomError, IAttack, ICreds, IRandomAttack, IShip, ShotHandled, Winner} from "../models/models";
 import {Room} from "./Room";
 import {Store} from "./Store";
 
@@ -92,6 +92,11 @@ export class User {
         })
     }
 
+    randomAttack(randomAttack: IRandomAttack) {
+        const position = (this.game as Game).getFreeEnemyCell()
+        this.attack({...position, ...randomAttack})
+    }
+
     getAttacked(attack: IAttack): Array<ShotHandled> {
         return (this.game as Game).getAttacked(attack)
     }
@@ -109,9 +114,7 @@ export class User {
     }
 
     logout() {
-        if (this.isFighting()) {
-            this.game?.finish()
-        }
+        this.game?.finish()
     }
 
     private sendFinish(winnerIndex: string) {

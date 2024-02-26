@@ -1,4 +1,4 @@
-import {IAttack, ICreds, IShip} from "./models";
+import {IAttack, ICreds, IRandomAttack, IShip} from "./models";
 
 /**
  * create / login
@@ -37,7 +37,7 @@ export const isCreateRoom = (data: Record<string, any>): data is RequestCreateRo
 }
 
 /**
- * add yourself to somebodys room
+ * add yourself to somebodies room
  */
 type AddYourselfToRoom = 'add_user_to_room'
 export const ADD_TO_ROOM: AddYourselfToRoom = 'add_user_to_room'
@@ -78,7 +78,7 @@ export const isAddShips = (data: Record<string, any>): data is RequestAddShips =
 }
 
 /**
- * add ships
+ * attack
  */
 type Attack = 'attack'
 export const ATTACK: Attack = 'attack'
@@ -93,5 +93,22 @@ export const isAttack = (data: Record<string, any>): data is RequestAttack => {
         && !!data?.data.gameId?.length
         && typeof data?.data?.x === 'number'
         && typeof data?.data?.y === 'number'
+        && !!data?.data.indexPlayer?.length
+}
+
+/**
+ * random attack
+ */
+type RandomAttack = 'randomAttack'
+export const RANDOM_ATTACK: RandomAttack = 'randomAttack'
+export interface RequestRandomAttack {
+    type: RandomAttack;
+    data: IRandomAttack;
+    id: 0
+}
+export const isRandomAttack = (data: Record<string, any>): data is RequestRandomAttack => {
+    return data?.type === RANDOM_ATTACK
+        && data?.id === 0
+        && !!data?.data.gameId?.length
         && !!data?.data.indexPlayer?.length
 }

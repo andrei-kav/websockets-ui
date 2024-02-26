@@ -5,8 +5,8 @@ import {
     ADD_TO_ROOM, ATTACK,
     CREATE_ROOM, isAddShips, isAddYourselfToRoom, isAttack,
     isCreateRoom,
-    isLoginCreate,
-    LOGIN
+    isLoginCreate, isRandomAttack,
+    LOGIN, RANDOM_ATTACK
 } from "../models/requests";
 import {CustomError, ICreds} from "../models/models";
 import {ResponseObj} from "../models/responses";
@@ -66,6 +66,11 @@ export class Client {
             case ATTACK:
                 if (isAttack(parsed) && this.user && this.user.isFighting()) {
                     this.user.attack(parsed.data)
+                    break;
+                }
+            case RANDOM_ATTACK:
+                if (isRandomAttack(parsed) && this.user && this.user.isFighting()) {
+                    this.user.randomAttack(parsed.data)
                     break;
                 }
             default:

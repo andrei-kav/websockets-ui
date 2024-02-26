@@ -16,11 +16,14 @@ export interface IShip {
     type: 'small'|'medium'|'large'|'huge';
 }
 
-export interface IAttack {
+export interface IRandomAttack {
     gameId: string;
+    indexPlayer: string;
+}
+
+export interface IAttack extends IRandomAttack {
     x: number;
     y: number;
-    indexPlayer: string;
 }
 
 export class ShotHandled {

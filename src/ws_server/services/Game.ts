@@ -1,4 +1,4 @@
-import {IAttack, IShip, ShipToPlay, ShotHandled} from "../models/models";
+import {CustomError, IAttack, IShip, ShipToPlay, ShotHandled} from "../models/models";
 import {User} from "./User";
 
 export class Game {
@@ -22,23 +22,6 @@ export class Game {
     public addShips(ships: Array<IShip>) {
         this.shipsGotFromRequest = ships
         this.shipsToPLay = ships.map(ship => new ShipToPlay(ship))
-
-        // this.shipsToPLay = this.formMatrix()
-        // this.shipsGotFromRequest.forEach(ship => {
-        //     const { x, y } = ship.position
-        //
-        //     if (ship.direction) {
-        //         // vertical
-        //         for (let i = y; i < y + ship.length; i++) {
-        //             (this.shipsToPLay[i] as Array<0 | 1>)[x] = 1
-        //         }
-        //     } else {
-        //         // horizontal
-        //         for (let j = x; j < x + ship.length; j++) {
-        //             (this.shipsToPLay[y] as Array<0 | 1>)[j] = 1
-        //         }
-        //     }
-        // })
 
         if (this.enemy.isReadyToStart()) {
             this.you.startGame()
@@ -79,6 +62,10 @@ export class Game {
     }
 
     attack(attack: IAttack): Array<ShotHandled> {
+        if (this.cellAlreadyHit(attack)) {
+            return []
+        }
+
         const shots = this.enemy.getAttacked(attack)
         this.markShots(shots)
 
@@ -98,9 +85,23 @@ export class Game {
         return shotsHandled
     }
 
+    getFreeEnemyCell(): {x: number, y: number} {
+        const y = this.enemyField.findIndex(row => row.includes(0))
+        const x = this.enemyField[y]?.findIndex(value => value === 0)
+
+        if (typeof x === 'number' && x >= 0 && typeof y === 'number' && y >= 0) {
+            return {x, y}
+        }
+        throw new CustomError('error', 'random attack failed')
+    }
+
     finish() {
         this.enemy.win()
         this.you.lose(this.enemy.index)
+    }
+
+    private cellAlreadyHit(attack: IAttack) {
+        return !!(this.enemyField[attack.y] as Array<0 | 1>)[attack.x]
     }
 
     private markShots(shots: Array<ShotHandled>) {
@@ -142,7 +143,6 @@ export class Game {
 
     private init() {
         console.log(!!this.id)
-        console.log(!!this.enemyField)
         this.enemyField = this.formMatrix()
     }
 
