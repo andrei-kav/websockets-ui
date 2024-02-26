@@ -1,4 +1,4 @@
-import {ICreds} from "./models";
+import {ICreds, IShip} from "./models";
 
 /**
  * create / login
@@ -58,32 +58,22 @@ export const IsAddYourselfToRoom = (data: Record<string, any>): data is RequestA
 /**
  * add ships
  */
-// type AddShips = 'add_ships'
-// export const ADD_SHIPS: AddShips = 'add_ships'
-// export interface RequestAddShips {
-//     type: AddShips;
-//     data: {
-//         gameId: string;
-//         ships: [
-//             {
-//                 position: {
-//                     x: number;
-//                     y: number;
-//                 },
-//                 direction: boolean;
-//                 length: number;
-//                 type: 'small'|'medium'|'large'|'huge';
-//             }
-//         ],
-//         indexPlayer: string;
-//     };
-//     id: 0
-// }
-// export const IsAddShips = (data: Record<string, any>): data is RequestAddShips => {
-//     return data?.type === ADD_SHIPS
-//         && data?.id === 0
-//         && typeof data?.data?.gameId === 'string'
-//         && !!data?.data.gameId.length
-//         && !!data?.data.ships?.length
-//         && !!data?.data.indexPlayer?.length
-// }
+type AddShips = 'add_ships'
+export const ADD_SHIPS: AddShips = 'add_ships'
+export interface RequestAddShips {
+    type: AddShips;
+    data: {
+        gameId: string;
+        ships: Array<IShip>,
+        indexPlayer: string;
+    };
+    id: 0
+}
+export const IsAddShips = (data: Record<string, any>): data is RequestAddShips => {
+    return data?.type === ADD_SHIPS
+        && data?.id === 0
+        && typeof data?.data?.gameId === 'string'
+        && !!data?.data.gameId.length
+        && !!data?.data.ships?.length
+        && !!data?.data.indexPlayer?.length
+}

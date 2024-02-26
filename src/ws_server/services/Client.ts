@@ -1,8 +1,9 @@
 import {Store} from "./Store";
 import WebSocket, {RawData} from "ws";
 import {
+    ADD_SHIPS,
     ADD_TO_ROOM,
-    CREATE_ROOM, IsAddYourselfToRoom,
+    CREATE_ROOM, IsAddShips, IsAddYourselfToRoom,
     IsCreateRoom,
     IsLoginCreate,
     LOGIN
@@ -53,6 +54,11 @@ export class Client {
             case ADD_TO_ROOM:
                 if (IsAddYourselfToRoom(parsed) && this.user) {
                     this.addYourselfToRoom(parsed.data.indexRoom, this.user)
+                    break;
+                }
+            case ADD_SHIPS:
+                if (IsAddShips(parsed) && this.user && this.user.isPreparing()) {
+                    this.user.addShips(parsed.data.ships)
                     break;
                 }
             default:
@@ -107,16 +113,18 @@ export class Client {
 
     private createGame(room: Room) {
         const users = room.roomUsers;
-        if (!ableToCreateGame(users)) {
+        if (!ableToCreateGame(users) || !this.user) {
             throw new CustomError('error', 'failed to create a game')
         }
-        const user1 = this.store.getUser(users[0].name)
-        const user2 = this.store.getUser(users[1].name)
-        if (!user1 || !user2) {
+
+        const opponentLike = users.filter(user => user.name !== this.user?.name)[0]
+        const opponent = this.store.getUser(opponentLike?.name as string)
+        if (!opponent) {
             throw new CustomError('error', 'failed to create a game')
         }
         const idGame = generateID('game')
-        this.notifyUsers([user1, user2], user => user.createGame(idGame))
+        this.user.createGame(idGame, opponent, false)
+        opponent.createGame(idGame, this.user, true)
     }
 
     private send(response: ResponseObj) {

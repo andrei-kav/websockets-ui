@@ -1,10 +1,21 @@
 import {generateID} from "../helpers/generateID";
 import WebSocket from "ws";
 import {ResponseObj} from "./responses";
+import {Game} from "../services/Game";
 
 export interface ICreds {
     name: string;
     password: string;
+}
+
+export interface IShip {
+    position: {
+        x: number;
+        y: number;
+    },
+    direction: boolean;
+    length: number;
+    type: 'small'|'medium'|'large'|'huge';
 }
 
 export class CustomError {
@@ -20,12 +31,13 @@ export class CustomError {
 
 export class User implements ICreds {
     // name is supposed to be unique
-    name: string;
-    password: string;
-    index: string;
-    wins = 0;
+    name: string
+    password: string
+    index: string
+    wins = 0
 
-    private ws: WebSocket;
+    private ws: WebSocket
+    private game: Game | null = null
 
     constructor(data: ICreds, ws: WebSocket) {
         this.name = data.name
@@ -44,9 +56,39 @@ export class User implements ICreds {
         this.send(response)
     }
 
-    createGame(idGame: string) {
+    createGame(idGame: string, opponent: User, turn: boolean) {
         const response = new ResponseObj('create_game', {idGame: idGame, idPlayer: this.index})
         this.send(response)
+        this.game = new Game(idGame, this, opponent, turn)
+    }
+
+    startGame() {
+        const ships = this.game?.getShips()
+        if (ships) {
+            const response = new ResponseObj('start_game', {ships: ships, currentPlayerIndex: this.index})
+            this.send(response)
+            this.takeTurn()
+        }
+    }
+
+    takeTurn() {
+        const turn = this.game?.isMyTurn()
+        if (turn) {
+            const response = new ResponseObj('turn', {currentPlayerIndex: this.index})
+            this.send(response)
+        }
+    }
+
+    isPreparing(): boolean {
+        return !!this.game && !this.game.isReadyToStart()
+    }
+
+    isReadyToStart(): boolean {
+        return !!this.game?.isReadyToStart()
+    }
+
+    addShips(ships: Array<IShip>) {
+        this.game?.addShips(ships)
     }
 
     private send(response: ResponseObj) {
