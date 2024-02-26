@@ -134,9 +134,7 @@ export class Client {
     }
 
     private close() {
-        if (this.user) {
-            this.user.logout()
-        }
+        this.user?.logout()
     }
 
     private parseMessage(message: RawData): Record<string, any> {
