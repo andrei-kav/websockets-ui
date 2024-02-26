@@ -1,4 +1,5 @@
-import {IShip, User} from "../models/models";
+import {IShip} from "../models/models";
+import {User} from "./User";
 
 export class Game {
 

@@ -1,6 +1,8 @@
-import {CustomError, ICreds, Room, User, Winner} from "../models/models";
+import {CustomError, ICreds, Winner} from "../models/models";
 import {LoginResult} from "../models/responses";
 import WebSocket from "ws";
+import {User} from "./User";
+import {Room} from "./Room";
 
 export class Store {
 
@@ -35,10 +37,10 @@ export class Store {
     authenticate(data: ICreds, ws: WebSocket): LoginResult | undefined {
         const user = this.users.get(data.name)
         if (user) {
-            if (user.password !== data.password) {
-                return new LoginResult(user.name, user.index, true, 'invalid password')
+            if (user.isPasswordValid(data.password)) {
+                return new LoginResult(user.name, user.index, false, '')
             }
-            return new LoginResult(user.name, user.index, false, '')
+            return new LoginResult(user.name, user.index, true, 'invalid password')
         }
         // create new user
         const newUser = new User(data, ws)

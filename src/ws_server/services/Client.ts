@@ -8,10 +8,12 @@ import {
     IsLoginCreate,
     LOGIN
 } from "../models/requests";
-import {CustomError, ICreds, Room, User} from "../models/models";
+import {CustomError, ICreds} from "../models/models";
 import {ResponseObj} from "../models/responses";
 import {generateID} from "../helpers/generateID";
 import {ableToCreateGame} from "../helpers/ableToCreateGame";
+import {User} from "./User";
+import {Room} from "./Room";
 
 export class Client {
 
@@ -57,7 +59,7 @@ export class Client {
                     break;
                 }
             case ADD_SHIPS:
-                if (IsAddShips(parsed) && this.user && this.user.isPreparing()) {
+                if (IsAddShips(parsed) && this.user && this.user.isPreparingToPlay()) {
                     this.user.addShips(parsed.data.ships)
                     break;
                 }

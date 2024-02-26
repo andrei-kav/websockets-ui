@@ -1,4 +1,4 @@
-import {User} from "../models/models";
+import {User} from "../services/User";
 
 export const ableToCreateGame = (users: Array<Pick<User, 'name' | 'index'>>): users is [Pick<User, 'name' | 'index'>, Pick<User, 'name' | 'index'>] => {
     return users.length === 2
