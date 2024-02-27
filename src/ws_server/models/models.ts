@@ -41,7 +41,7 @@ export class ShipToPlay {
         y: number;
         attacked: boolean;
     }>
-    // true if vertical
+    // direction is true if vertical
     direction: boolean
     destroyed: boolean
 
