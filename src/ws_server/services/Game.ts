@@ -12,6 +12,7 @@ export class Game {
 
     constructor(
         private id: string,
+        private roomId: string,
         private you: User,
         private enemy: User,
         private yourMove: boolean
@@ -98,6 +99,10 @@ export class Game {
     finish() {
         this.enemy.win()
         this.you.lose(this.enemy.index)
+    }
+
+    getRoomId(): string {
+        return this.roomId
     }
 
     private cellAlreadyHit(attack: IAttack) {

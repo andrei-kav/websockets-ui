@@ -31,9 +31,15 @@ export class Store {
         this.notifyAllAboutWinners()
     }
 
-    createRoom(user: User) {
+    createRoom(user: User): Room {
         const newRoom = new Room(user)
         this.rooms.set(newRoom.roomId, newRoom)
+        this.notifyAllAboutFreeRooms()
+        return newRoom
+    }
+
+    removeRoom(roomId: string) {
+        this.rooms.delete(roomId)
         this.notifyAllAboutFreeRooms()
     }
 

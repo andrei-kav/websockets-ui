@@ -15,8 +15,9 @@ export class User {
 
     private password: string
     private ws: WebSocket
-    private game: Game | null = null
     private store: Store
+    private myRooms: Array<Room> = []
+    private game: Game | null = null
 
     constructor(data: ICreds, ws: WebSocket, store: Store) {
         this.name = data.name
@@ -31,7 +32,7 @@ export class User {
     }
 
     createRoom() {
-        this.store.createRoom(this)
+        this.myRooms.push(this.store.createRoom(this))
     }
 
     addYourselfToRoom(roomId: string) {
@@ -112,19 +113,26 @@ export class User {
     }
 
     win() {
-        this.game = null
-        this.wins = this.wins + 1
-        this.sendFinish(this.index)
-        this.store.notifyAllAboutWinners()
+        if (this.game) {
+            this.store.removeRoom(this.game.getRoomId())
+            this.game = null
+            this.wins = this.wins + 1
+            this.sendFinish(this.index)
+            this.store.notifyAllAboutWinners()
+        }
     }
 
     lose(winnerIndex: string) {
-        this.game = null
-        this.sendFinish(winnerIndex)
+        if (this.game) {
+            this.store.removeRoom(this.game.getRoomId())
+            this.game = null
+            this.sendFinish(winnerIndex)
+        }
     }
 
     logout() {
         this.game?.finish()
+        this.myRooms.forEach(room => this.store.removeRoom(room.roomId))
     }
 
     private tryCreateGame(room: Room) {
@@ -138,14 +146,14 @@ export class User {
             throw new CustomError('error', 'failed to create a game')
         }
         const idGame = generateID('game')
-        this.createGame(idGame, opponent, false)
-        opponent.createGame(idGame, this, true)
+        this.createGame(idGame, room.roomId, opponent, false)
+        opponent.createGame(idGame, room.roomId, this, true)
     }
 
-    private createGame(idGame: string, opponent: User, yourTurn: boolean) {
+    private createGame(idGame: string, roomId: string, opponent: User, yourTurn: boolean) {
         const response = new ResponseObj(ResponseType.CREATE_GAME, {idGame: idGame, idPlayer: this.index})
         this.send(response)
-        this.game = new Game(idGame, this, opponent, yourTurn)
+        this.game = new Game(idGame, roomId, this, opponent, yourTurn)
     }
 
     private sendFinish(winnerIndex: string) {
