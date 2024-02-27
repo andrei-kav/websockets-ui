@@ -15,7 +15,7 @@ import {
     RANDOM_ATTACK
 } from "../models/requests";
 import {CustomError, ICreds} from "../models/models";
-import {ResponseObj, ResponseType} from "../models/responses";
+import {LoginResult, ResponseObj, ResponseType} from "../models/responses";
 import {User} from "./User";
 
 export class Client {
@@ -88,17 +88,17 @@ export class Client {
             return
         }
 
-        // notify front
-        this.send(new ResponseObj(ResponseType.REG, result))
-
-        if (result.error) {
-            // no user => do nothing
+        if (result instanceof User) {
+            this.user = result
+            const response = new LoginResult(this.user.name, this.user.index, false, '')
+            this.send(new ResponseObj(ResponseType.REG, response))
             return
         }
 
-        this.user = this.store.getUser(result.name)
-        this.store.notifyAllAboutWinners()
-        this.store.notifyAllAboutFreeRooms()
+        if (result instanceof LoginResult) {
+            // LoginResult is the error about authentication process
+            this.send(new ResponseObj(ResponseType.REG, result))
+        }
     }
 
     private send(response: ResponseObj) {

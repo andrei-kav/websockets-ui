@@ -14,21 +14,21 @@ export class Store {
         this.rooms = new Map<string, Room>()
     }
 
-    getUser(name: string): User | null {
-        return this.users.get(name) || null
-    }
-
-    authenticate(data: ICreds, ws: WebSocket): LoginResult | undefined {
+    authenticate(data: ICreds, ws: WebSocket): User | LoginResult | undefined {
         const user = this.users.get(data.name)
         if (user) {
-            if (user.isPasswordValid(data.password)) {
-                return new LoginResult(user.name, user.index, false, '')
+            if (user.isPasswordMatched(data.password)) {
+                // success
+                user.updateWinners(this.getWinners())
+                user.updateFreeRooms(this.getFreeRooms())
+                return user
             }
             return new LoginResult(user.name, user.index, true, 'invalid password')
         }
         // create new user
         const newUser = new User(data, ws, this)
         this.users.set(data.name, newUser)
+        this.notifyAllAboutWinners()
     }
 
     createRoom(user: User) {

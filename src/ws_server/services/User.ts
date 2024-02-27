@@ -26,7 +26,7 @@ export class User {
         this.store = store
     }
 
-    isPasswordValid(password: string): boolean {
+    isPasswordMatched(password: string): boolean {
         return this.password === password
     }
 
