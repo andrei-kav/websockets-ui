@@ -1,7 +1,7 @@
 import WebSocket from "ws";
 import {Game} from "./Game";
 import {generateID} from "../helpers/generateID";
-import {ResponseObj} from "../models/responses";
+import {ResponseObj, ResponseType} from "../models/responses";
 import {CustomError, IAttack, ICreds, IRandomAttack, IShip, ShotHandled, Winner} from "../models/models";
 import {Room} from "./Room";
 import {Store} from "./Store";
@@ -30,38 +30,48 @@ export class User {
         return this.password === password
     }
 
-    updateFreeRooms(availableRooms: Array<Room>) {
-        const response = new ResponseObj('update_room', availableRooms)
+    createRoom() {
+        this.store.createRoom(this)
+    }
+
+    addYourselfToRoom(roomId: string) {
+        const room = this.store.addToRoom(roomId, this)
+        if (room) {
+            this.tryCreateGame(room)
+        }
+    }
+
+    updateFreeRooms(freeRooms: Array<Room>) {
+        const availableRooms = freeRooms.map(room => room.forResponse())
+        const response = new ResponseObj(ResponseType.UPDATE_ROOM, availableRooms)
         this.send(response)
     }
 
     updateWinners(winners: Array<Winner>) {
-        const response = new ResponseObj('update_winners', winners)
+        const response = new ResponseObj(ResponseType.UPDATE_WINNERS, winners)
         this.send(response)
-    }
-
-    createGame(idGame: string, opponent: User, yourTurn: boolean) {
-        const response = new ResponseObj('create_game', {idGame: idGame, idPlayer: this.index})
-        this.send(response)
-        this.game = new Game(idGame, this, opponent, yourTurn)
     }
 
     startGame() {
         const ships = this.game?.getShips()
         if (ships) {
-            const response = new ResponseObj('start_game', {ships: ships, currentPlayerIndex: this.index})
+            const response = new ResponseObj(ResponseType.START_GAME, {ships: ships, currentPlayerIndex: this.index})
             this.send(response)
             this.game?.start()
         }
     }
 
     initTurn(userIndex: string) {
-        const response = new ResponseObj('turn', {currentPlayer: userIndex})
+        const response = new ResponseObj(ResponseType.TURN, {currentPlayer: userIndex})
         this.send(response)
     }
 
     yourTurn() {
         this.game?.myTurn()
+    }
+
+    isInGame(): boolean {
+        return !!this.game
     }
 
     isPreparingToPlay(): boolean {
@@ -87,7 +97,7 @@ export class User {
         const results = (this.game as Game).attack(attack)
         results.forEach(shot => {
             const data = {...shot, currentPlayer: this.index}
-            const response = new ResponseObj('attack', data)
+            const response = new ResponseObj(ResponseType.ATTACK, data)
             this.send(response)
         })
     }
@@ -105,7 +115,7 @@ export class User {
         this.game = null
         this.wins = this.wins + 1
         this.sendFinish(this.index)
-        this.store.notifyAboutWinners()
+        this.store.notifyAllAboutWinners()
     }
 
     lose(winnerIndex: string) {
@@ -117,14 +127,35 @@ export class User {
         this.game?.finish()
     }
 
+    private tryCreateGame(room: Room) {
+        const users = room.roomUsers;
+        if (users.length !== 2) {
+            throw new CustomError('error', 'failed to create a game')
+        }
+
+        const opponent = users.filter(user => user.name !== this.name)[0]
+        if (!opponent) {
+            throw new CustomError('error', 'failed to create a game')
+        }
+        const idGame = generateID('game')
+        this.createGame(idGame, opponent, false)
+        opponent.createGame(idGame, this, true)
+    }
+
+    private createGame(idGame: string, opponent: User, yourTurn: boolean) {
+        const response = new ResponseObj(ResponseType.CREATE_GAME, {idGame: idGame, idPlayer: this.index})
+        this.send(response)
+        this.game = new Game(idGame, this, opponent, yourTurn)
+    }
+
     private sendFinish(winnerIndex: string) {
-        const response = new ResponseObj('finish', {winPlayer: winnerIndex})
+        const response = new ResponseObj(ResponseType.FINISH, {winPlayer: winnerIndex})
         this.send(response)
     }
 
     private send(response: ResponseObj) {
         if (this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify(response))
+            this.ws.send(response.toJson())
         }
     }
 }

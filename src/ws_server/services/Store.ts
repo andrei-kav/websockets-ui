@@ -34,7 +34,7 @@ export class Store {
     createRoom(user: User) {
         const newRoom = new Room(user)
         this.rooms.set(newRoom.roomId, newRoom)
-        this.notifyAboutFreeRooms()
+        this.notifyAllAboutFreeRooms()
     }
 
     addToRoom(roomId: string, user: User): Room {
@@ -46,17 +46,21 @@ export class Store {
             // user already in this room
             throw new CustomError('error', `You are the owner of this room`)
         }
+        if (room.roomUsers.some(roomUser => roomUser.isInGame())) {
+            // room owner is already playing
+            throw new CustomError('error', `Room owner is already playing`)
+        }
         room.join(user)
-        this.notifyAboutFreeRooms()
+        this.notifyAllAboutFreeRooms()
         return room
     }
 
-    notifyAboutFreeRooms() {
+    notifyAllAboutFreeRooms() {
         const rooms = this.getFreeRooms()
         this.notifyAll(user => user.updateFreeRooms(rooms))
     }
 
-    notifyAboutWinners() {
+    notifyAllAboutWinners() {
         const winners = this.getWinners()
         this.notifyAll(user => user.updateWinners(winners))
     }
