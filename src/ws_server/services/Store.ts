@@ -76,7 +76,7 @@ export class Store {
     }
 
     private getWinners(): Array<Winner> {
-        return Array.from(this.users.values())
+        return this.getAll()
             .map(user => new Winner(user))
             .sort((a: Winner, b: Winner) => b.wins - a.wins)
     }
