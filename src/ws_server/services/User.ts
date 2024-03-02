@@ -2,14 +2,13 @@ import WebSocket from "ws";
 import {Game} from "./Game";
 import {generateID} from "../helpers/generateID";
 import {ResponseObj, ResponseType} from "../models/responses";
-import {CustomError, IAttack, ICreds, IRandomAttack, IShip, ShotHandled, Winner} from "../models/models";
+import {CustomError, IAttack, IRandomAttack, IShip, IUserData, ShotHandled, Winner} from "../models/models";
 import {Room} from "./Room";
 import {Store} from "./Store";
 
 export class User {
     // name is supposed to be unique
     name: string
-    wins = 0
 
     readonly index: string
 
@@ -19,7 +18,7 @@ export class User {
     private myRooms: Array<Room> = []
     private game: Game | null = null
 
-    constructor(data: ICreds, ws: WebSocket, store: Store) {
+    constructor(data: IUserData, ws: WebSocket, store: Store) {
         this.name = data.name
         this.password = data.password
         this.index = generateID(this.name)
@@ -116,8 +115,8 @@ export class User {
         if (this.game) {
             this.store.removeRoom(this.game.getRoomId())
             this.game = null
-            this.wins = this.wins + 1
             this.sendFinish(this.index)
+            this.store.userWon(this.name)
             this.store.notifyAllAboutWinners()
         }
     }
@@ -131,6 +130,7 @@ export class User {
     }
 
     logout() {
+        this.store.logout(this.index)
         this.game?.finish()
         this.myRooms.forEach(room => this.store.removeRoom(room.roomId))
     }

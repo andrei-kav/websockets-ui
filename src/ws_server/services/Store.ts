@@ -1,4 +1,4 @@
-import {CustomError, ICreds, Winner} from "../models/models";
+import {CustomError, ICreds, IUserData, Winner} from "../models/models";
 import {LoginResult} from "../models/responses";
 import WebSocket from "ws";
 import {User} from "./User";
@@ -6,19 +6,23 @@ import {Room} from "./Room";
 
 export class Store {
 
-    private users: Map<string, User>
+    private usersData: Map<string, IUserData>
+    private usersAuthenticated: Map<string, User>
     private rooms: Map<string, Room>
 
     constructor() {
-        this.users = new Map<string, User>()
+        this.usersData = new Map<string, IUserData>()
+        this.usersAuthenticated = new Map<string, User>()
         this.rooms = new Map<string, Room>()
     }
 
     authenticate(data: ICreds, ws: WebSocket): User | LoginResult | undefined {
-        const user = this.users.get(data.name)
-        if (user) {
+        const userData = this.usersData.get(data.name)
+        if (userData) {
+            const user = new User(userData, ws, this)
             if (user.isPasswordMatched(data.password)) {
                 // success
+                this.usersAuthenticated.set(user.index, user)
                 user.updateWinners(this.getWinners())
                 user.updateFreeRooms(this.getFreeRooms())
                 return user
@@ -26,8 +30,7 @@ export class Store {
             return new LoginResult(user.name, user.index, true, 'invalid password')
         }
         // create new user
-        const newUser = new User(data, ws, this)
-        this.users.set(data.name, newUser)
+        this.usersData.set(data.name, {...data, wins: 0})
         this.notifyAllAboutWinners()
     }
 
@@ -48,7 +51,7 @@ export class Store {
         if (!room) {
             throw new CustomError('error', `room ${roomId} is not found`)
         }
-        if (room.roomUsers.some(roomUser => roomUser.index === user.index)) {
+        if (room.roomUsers.some(roomUser => roomUser.index === user.index || roomUser.name === user.name)) {
             // user already in this room
             throw new CustomError('error', `You are the owner of this room`)
         }
@@ -72,11 +75,25 @@ export class Store {
     }
 
     notifyAll(callback: (user: User) => void) {
-        this.getAll().forEach(callback)
+        this.getAllAuthenticatedUsers().forEach(callback)
+    }
+
+    userWon(name: string) {
+        const userData = this.usersData.get(name)
+        if (!userData) {
+            throw new CustomError('error', `user ${name} is not found in DB`)
+        }
+        const updated = {...userData, wins: userData.wins + 1}
+        this.usersData.delete(name)
+        this.usersData.set(name, updated)
+    }
+
+    logout(userIndex: string) {
+        this.usersAuthenticated.delete(userIndex)
     }
 
     private getWinners(): Array<Winner> {
-        return this.getAll()
+        return this.getAllUsersData()
             .map(user => new Winner(user))
             .sort((a: Winner, b: Winner) => b.wins - a.wins)
     }
@@ -86,7 +103,11 @@ export class Store {
             .filter(room => room.roomUsers.length === 1)
     }
 
-    private getAll(): Array<User> {
-        return Array.from(this.users.values())
+    private getAllUsersData(): Array<IUserData> {
+        return Array.from(this.usersData.values())
+    }
+
+    private getAllAuthenticatedUsers(): Array<User> {
+        return Array.from(this.usersAuthenticated.values())
     }
 }
