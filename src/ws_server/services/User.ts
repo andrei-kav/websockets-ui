@@ -150,10 +150,10 @@ export class User {
         opponent.createGame(idGame, room.roomId, this, true)
     }
 
-    private createGame(idGame: string, roomId: string, opponent: User, yourTurn: boolean) {
+    private createGame(idGame: string, roomId: string, opponent: User, yourMove: boolean) {
         const response = new ResponseObj(ResponseType.CREATE_GAME, {idGame: idGame, idPlayer: this.index})
         this.send(response)
-        this.game = new Game(idGame, roomId, this, opponent, yourTurn)
+        this.game = new Game(idGame, roomId, this, opponent, yourMove)
     }
 
     private sendFinish(winnerIndex: string) {
