@@ -3,14 +3,21 @@ import {User} from "./User";
 
 export class Room {
     roomId: string
-    roomUsers: Array<Pick<User, 'name' | 'index'>> = []
+    roomUsers: Array<User> = []
 
     constructor(owner: User) {
         this.roomId = generateID(owner.name)
-        this.roomUsers.push({name: owner.name, index: owner.index})
+        this.roomUsers.push(owner)
     }
 
     join(user: User) {
-        this.roomUsers.push({name: user.name, index: user.index})
+        this.roomUsers.push(user)
+    }
+
+    forResponse() {
+        return {
+            roomId: this.roomId,
+            roomUsers: this.roomUsers.map(user => ({name: user.name, index: user.index}))
+        }
     }
 }

@@ -1,8 +1,10 @@
-import {User} from "../services/User";
-
 export interface ICreds {
     name: string;
     password: string;
+}
+
+export interface IUserData extends ICreds {
+    wins: number;
 }
 
 export interface IShip {
@@ -41,7 +43,7 @@ export class ShipToPlay {
         y: number;
         attacked: boolean;
     }>
-    // true if vertical
+    // direction is true if vertical
     direction: boolean
     destroyed: boolean
 
@@ -71,7 +73,7 @@ export class CustomError {
 export class Winner {
     name: string
     wins: number
-    constructor(user: User) {
+    constructor(user: IUserData) {
         this.name = user.name
         this.wins = user.wins
     }

@@ -12,9 +12,10 @@ export class Game {
 
     constructor(
         private id: string,
+        private roomId: string,
         private you: User,
         private enemy: User,
-        private turn: boolean
+        private yourMove: boolean
     ) {
         this.init()
     }
@@ -38,22 +39,22 @@ export class Game {
     }
 
     isYourTurn(): boolean {
-        return this.turn
+        return this.yourMove
     }
 
     wait() {
-        this.turn = false
+        this.yourMove = false
         this.you.initTurn(this.enemy.index)
     }
 
     myTurn() {
-        this.turn = true
+        this.yourMove = true
         this.you.initTurn(this.you.index)
     }
 
     start() {
         this.started = true
-        const userIndex = this.turn ? this.you.index : this.enemy.index
+        const userIndex = this.yourMove ? this.you.index : this.enemy.index
         this.you.initTurn(userIndex)
     }
 
@@ -98,6 +99,10 @@ export class Game {
     finish() {
         this.enemy.win()
         this.you.lose(this.enemy.index)
+    }
+
+    getRoomId(): string {
+        return this.roomId
     }
 
     private cellAlreadyHit(attack: IAttack) {

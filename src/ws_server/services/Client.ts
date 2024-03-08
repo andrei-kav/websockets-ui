@@ -2,18 +2,21 @@ import {Store} from "./Store";
 import WebSocket, {RawData} from "ws";
 import {
     ADD_SHIPS,
-    ADD_TO_ROOM, ATTACK,
-    CREATE_ROOM, isAddShips, isAddYourselfToRoom, isAttack,
+    ADD_TO_ROOM,
+    ATTACK,
+    CREATE_ROOM,
+    isAddShips,
+    isAddYourselfToRoom,
+    isAttack,
     isCreateRoom,
-    isLoginCreate, isRandomAttack,
-    LOGIN, RANDOM_ATTACK
+    isLoginCreate,
+    isRandomAttack,
+    LOGIN,
+    RANDOM_ATTACK
 } from "../models/requests";
 import {CustomError, ICreds} from "../models/models";
-import {ResponseObj} from "../models/responses";
-import {generateID} from "../helpers/generateID";
-import {ableToCreateGame} from "../helpers/ableToCreateGame";
+import {LoginResult, ResponseObj, ResponseType} from "../models/responses";
 import {User} from "./User";
-import {Room} from "./Room";
 
 export class Client {
 
@@ -50,12 +53,12 @@ export class Client {
                 }
             case CREATE_ROOM:
                 if (isCreateRoom(parsed) && this.user) {
-                    this.createRoom(this.user)
+                    this.user.createRoom()
                     break;
                 }
             case ADD_TO_ROOM:
                 if (isAddYourselfToRoom(parsed) && this.user) {
-                    this.addYourselfToRoom(parsed.data.indexRoom, this.user)
+                    this.user.addYourselfToRoom(parsed.data.indexRoom)
                     break;
                 }
             case ADD_SHIPS:
@@ -85,52 +88,25 @@ export class Client {
             return
         }
 
-        // notify front
-        this.send(new ResponseObj(LOGIN, result))
-
-        if (result.error) {
-            // no user => do nothing
+        if (result instanceof User) {
+            this.user = result
+            const response = new LoginResult(this.user.name, this.user.index, false, '')
+            this.send(new ResponseObj(ResponseType.REG, response))
             return
         }
 
-        this.user = this.store.getUser(result.name)
-        this.store.notifyAboutWinners()
-        this.store.notifyAboutFreeRooms()
-    }
-
-    private createRoom(user: User) {
-        this.store.createRoom(user)
-    }
-
-    private addYourselfToRoom(roomId: string, user: User) {
-        const room = this.store.addToRoom(roomId, user)
-        if (room) {
-            this.createGame(room)
+        if (result instanceof LoginResult) {
+            // LoginResult is the error about authentication process
+            this.send(new ResponseObj(ResponseType.REG, result))
         }
-    }
-
-    private createGame(room: Room) {
-        const users = room.roomUsers;
-        if (!ableToCreateGame(users) || !this.user) {
-            throw new CustomError('error', 'failed to create a game')
-        }
-
-        const opponentLike = users.filter(user => user.name !== this.user?.name)[0]
-        const opponent = this.store.getUser(opponentLike?.name as string)
-        if (!opponent) {
-            throw new CustomError('error', 'failed to create a game')
-        }
-        const idGame = generateID('game')
-        this.user.createGame(idGame, opponent, false)
-        opponent.createGame(idGame, this.user, true)
     }
 
     private send(response: ResponseObj) {
-        this.webSocket.send(JSON.stringify(response))
+        this.webSocket.send(response.toJson())
     }
 
     private handleError(error: any) {
-        this.send(new ResponseObj('error', error))
+        this.send(new ResponseObj(ResponseType.ERROR, error))
     }
 
     private close() {
